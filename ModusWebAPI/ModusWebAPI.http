@@ -1,0 +1,10 @@
+@ModusWebAPI_HostAddress = http://localhost:5082
+
+GET {{ModusWebAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
+
+POST {{ModusWebAPI_HostAddress}}/api/products
+
+###

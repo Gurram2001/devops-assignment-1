@@ -1,0 +1,48 @@
+trigger:
+  branches:
+    include:
+      - main
+
+pool:
+  name: Default  # This is the self-hosted agent pool name
+
+variables:
+  dockerImageName: 'sampleapp'
+  dockerImageTag: '$(Build.BuildId)'
+  acrLoginServer: '<your-acr-name>.azurecr.io'
+  acrServiceConnection: '<your-azure-service-connection-name>'
+
+steps:
+
+# Checkout code
+- checkout: self
+
+# Build the Docker image
+- task: Docker@2
+  displayName: 'Build Docker Image'
+  inputs:
+    command: 'build'
+    Dockerfile: '**/Dockerfile'
+    tags: |
+      $(dockerImageName):$(dockerImageTag)
+
+# Login to ACR
+- script: |
+    echo "Logging in to ACR"
+    az acr login --name <your-acr-name>
+  displayName: 'ACR Login'
+
+# Tag and push Docker image
+- script: |
+    docker tag $(dockerImageName):$(dockerImageTag) $(acrLoginServer)/$(dockerImageName):$(dockerImageTag)
+    docker push $(acrLoginServer)/$(dockerImageName):$(dockerImageTag)
+  displayName: 'Tag and Push Image to ACR'
+
+# Deploy to Azure Web App using the ACR image
+- task: AzureWebAppContainer@1
+  displayName: 'Deploy to Web App for Containers'
+  inputs:
+    azureSubscription: $(acrServiceConnection)
+    appName: '<your-webapp-name>'
+    containers: '$(acrLoginServer)/$(dockerImageName):$(dockerImageTag)'
+
